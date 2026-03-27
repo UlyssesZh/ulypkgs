@@ -1,0 +1,25 @@
+diff --git a/renpy/loadsave.py b/renpy/loadsave.py
+index 9217027fe..455c4d28a 100644
+--- a/renpy/loadsave.py
++++ b/renpy/loadsave.py
+@@ -42,6 +42,7 @@ import renpy
+ from json import dumps as json_dumps
+ 
+ from renpy.compat.pickle import PROTOCOL, dump, loads
++from renpy.compat.pickle import dumps
+ 
+ 
+ # This is used as a quick and dirty way of versioning savegame
+diff --git a/renpy/display/im.py b/renpy/display/im.py
+index 90e677148..f109e50ad 100644
+--- a/renpy/display/im.py
++++ b/renpy/display/im.py
+@@ -896,7 +896,7 @@ class Composite(ImageBase):
+         self.images = [ image(i) for i in args[1::2] ]
+ 
+         # Only supports all the images having the same oversample factor
+-        self.oversample = self.images[0].get_oversample()
++        self.oversample = self.images[0].get_oversample() if self.images else 1
+ 
+     def get_hash(self):
+         rv = 0
