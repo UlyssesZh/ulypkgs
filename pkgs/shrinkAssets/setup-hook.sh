@@ -12,6 +12,17 @@ _afterShrinking() {
   fi
 }
 
+_shrinkedFile() {
+  local filename="$1"
+  local tempDir="${2:-"$(mktemp -d)"}"
+  local shrinkedFile="$tempDir/$RANDOM-$(basename "$filename")"
+  while [[ -e "$shrinkedFile" ]]; do
+    shrinkedFile="$tempDir/$RANDOM-$(basename "$filename")"
+  done
+  touch "$shrinkedFile" # prevent other processes from using the same filename
+  echo "$shrinkedFile"
+}
+
 shrinkPng() {
   local targetDir="${1:-.}"
   local tempDir="${2:-"$(mktemp -d)"}"
@@ -29,9 +40,14 @@ shrinkPng() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
-      magick "$file" -strip -quality "$pngShrinkQualityTarget" "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
+      if magick "$file" -strip -quality "$pngShrinkQualityTarget" "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait
@@ -54,14 +70,24 @@ shrinkJpeg() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       quality="$(magick identify -format "%Q" "$file")"
+      if [[ -z "$quality" ]]; then
+        echo "shrinkAssets: Unable to determine quality of $file; skipping shrinking" >&2
+        rm "$shrinkedFile"
+        exit
+      fi
       flags=(-strip)
       if [[ "$quality" -gt "$jpegShrinkQualityTarget" ]]; then
         flags+=(-quality "$jpegShrinkQualityTarget")
       fi
-      magick "$file" ${flags[@]} "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      if magick "$file" ${flags[@]} "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait
@@ -84,13 +110,24 @@ shrinkWebp() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
+      quality="$(magick identify -format "%Q" "$file")"
+      if [[ -z "$quality" ]]; then
+        echo "shrinkAssets: Unable to determine quality of $file; skipping shrinking" >&2
+        rm "$shrinkedFile"
+        exit
+      fi
       flags=(-strip)
-      if [[ "$(magick identify -format "%Q" "$file")" -gt "$webpShrinkQualityTarget" ]]; then
+      if [[ "$quality" -gt "$webpShrinkQualityTarget" ]]; then
         flags+=(-quality "$webpShrinkQualityTarget")
       fi
-      magick "$file" ${flags[@]} "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      if magick "$file" ${flags[@]} "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait
@@ -113,15 +150,26 @@ shrinkMp3() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
+      bitrate="$(ffprobe -v error -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file")"
+      if [[ -z "$bitrate" ]]; then
+        echo "shrinkAssets: Unable to determine bitrate of $file; skipping shrinking" >&2
+        rm "$shrinkedFile"
+        exit
+      fi
       flags=(-map_metadata -1 -vn)
-      if [[ "$(ffprobe -v error -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file")" -gt "$mp3ShrinkBitrateTarget" ]]; then
+      if [[ "$bitrate" -gt "$mp3ShrinkBitrateTarget" ]]; then
         flags+=(-b:a "${mp3ShrinkBitrateTarget}k")
       else
         flags+=(-c:a copy)
       fi
-      ffmpeg -v error -i "$file" ${flags[@]} "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      if ffmpeg -y -v error -i "$file" ${flags[@]} "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait
@@ -144,15 +192,26 @@ shrinkOgg() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
+      bitrate="$(ffprobe -v error -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file")"
+      if [[ -z "$bitrate" ]]; then
+        echo "shrinkAssets: Unable to determine bitrate of $file; skipping shrinking" >&2
+        rm "$shrinkedFile"
+        exit
+      fi
       flags=(-map_metadata -1 -vn)
-      if [[ "$(ffprobe -v error -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file")" -gt "$oggShrinkBitrateTarget" ]]; then
+      if [[ "$bitrate" -gt "$oggShrinkBitrateTarget" ]]; then
         flags+=(-b:a "${oggShrinkBitrateTarget}k")
       else
         flags+=(-c:a copy)
       fi
-      ffmpeg -v error -i "$file" ${flags[@]} "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      if ffmpeg -y -v error -i "$file" ${flags[@]} "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait
@@ -175,9 +234,14 @@ shrinkWebm() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
-      ffmpeg -v error -i "$file" -crf "$webmShrinkCrfTarget" -b:v 0 -map_metadata -1 "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
+      if ffmpeg -y -v error -i "$file" -crf "$webmShrinkCrfTarget" -b:v 0 -map_metadata -1 "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait
@@ -200,9 +264,14 @@ shrinkMpeg() {
       wait
     fi
     {
-      shrinkedFile="$tempDir/$(basename "$file")"
-      ffmpeg -v error -i "$file" -crf "$mpegShrinkCrfTarget" -b:v 0 -map_metadata -1 "$shrinkedFile"
-      _afterShrinking "$file" "$shrinkedFile"
+      set -euo pipefail
+      shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
+      if ffmpeg -y -v error -i "$file" -crf "$mpegShrinkCrfTarget" -b:v 0 -map_metadata -1 "$shrinkedFile"; then
+        _afterShrinking "$file" "$shrinkedFile"
+      else
+        echo "shrinkAssets: Failed to shrink $file; keeping original" >&2
+        rm "$shrinkedFile"
+      fi
     } &
   done
   wait

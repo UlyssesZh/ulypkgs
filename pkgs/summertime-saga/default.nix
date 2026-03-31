@@ -44,6 +44,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   ]
   ++ lib.optional stdenvNoCC.hostPlatform.isDarwin desktopToDarwinBundle;
 
+  dontShrinkPng = true; # most pngs are already optimized
+
   desktopItems = [
     (makeDesktopItem {
       name = "summertime-saga";
