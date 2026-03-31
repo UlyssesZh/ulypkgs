@@ -2,6 +2,9 @@
   lib,
   writeTextFile,
   ulypkgsPackages,
+  repoName ? "ulypkgs",
+  repoBaseUrl ? "https://github.com/UlyssesZh/ulypkgs/blob/master",
+  packages ? ulypkgsPackages,
 }:
 
 # must use writeTextFile instead of writeText to avoid evaluating the text just to evaluate this package
@@ -15,8 +18,8 @@ writeTextFile {
         <title>ulypkgs</title>
       </head>
       <body>
-        <h1>ulypkgs</h1>
-        <p>Here is a list of all packages added by ulypkgs.</p>
+        <h1>${repoName}</h1>
+        <p>Here is a list of all packages added by ${repoName}.</p>
         <ul>
           ${lib.concatMapAttrsStringSep "\n" (
             attr: package:
@@ -50,16 +53,28 @@ writeTextFile {
                     }</p>"
                   }
                   <p>Outputs: ${lib.concatMapStringsSep ", " (o: "<code>\"${o}\"</code>") package.outputs}</p>
-                  ${lib.optionalString (
-                    package ? meta.position
-                  ) "<p>Defined at ${lib.removePrefix "${toString ../.}/" package.meta.position}</p>"}
+                  ${lib.optionalString (package ? meta.position)
+                    "<p>Defined at ${
+                      let
+                        match = builtins.match "(.+):([0-9]+)" package.meta.position;
+                        file = builtins.elemAt match 0;
+                        line = builtins.elemAt match 1;
+                        relativeFile = lib.removePrefix basePath file;
+                        basePath = "${toString ../.}/";
+                      in
+                      if lib.hasPrefix basePath file then
+                        "<a href=\"${repoBaseUrl}/${relativeFile}#L${line}\" target=\"_blank\"><code>${relativeFile}:${line}</code></a>"
+                      else
+                        "<code>${package.meta.position}</code>"
+                    }</p>"
+                  }
                 </details></li>
               ''
             else
               ''
                 <li><code>${attr}</code> (not a derivation)</li>
               ''
-          ) ulypkgsPackages}
+          ) packages}
         </ul>
       </body>
     </html>

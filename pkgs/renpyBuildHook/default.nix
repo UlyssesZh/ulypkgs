@@ -5,7 +5,7 @@
 }:
 
 makeSetupHook {
-  name = "renpy-unpack-hook";
+  name = "renpy-build-hook";
 
   propagatedBuildInputs = [ renpy ];
 

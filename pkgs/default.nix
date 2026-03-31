@@ -49,6 +49,9 @@ let
       };
     };
 
+    # postInstall
+    resizeIcons = callPackage ./resizeIcons { };
+
     # postBuild
     shrinkAssets = callPackage ./shrinkAssets { };
 
@@ -73,6 +76,8 @@ let
     rpatool = with pkgs.python3Packages; toPythonApplication rpatool;
 
     ### Games
+
+    katawa-shoujo = callPackage ./katawa-shoujo { };
 
     once-in-a-lifetime = callPackage ./once-in-a-lifetime { };
 

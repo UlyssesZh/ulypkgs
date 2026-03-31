@@ -6,7 +6,7 @@ renpyWrap() {
   local executablePath="$2"
   shift 2
   renpyGameHomes+=("$gameHome")
-  makeWrapper "@renpy@" "$executablePath" --add-flags "$gameHome" "${renpyWrapperArgs[@]}" "$@"
+  makeWrapper "@renpy@" "$executablePath" --add-flags "$(printf '%q' "$gameHome")" "${renpyWrapperArgs[@]}" "$@"
 }
 
 renpyStrip() {

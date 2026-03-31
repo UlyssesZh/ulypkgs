@@ -4,7 +4,7 @@
 }:
 
 makeSetupHook {
-  name = "delete-useless-files-hook";
+  name = "delete-useless-files";
 
   meta = {
     description = "Setup hook for deleting useless files in $out";

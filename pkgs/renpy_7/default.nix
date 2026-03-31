@@ -103,6 +103,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     # https://github.com/renpy/renpy/pull/6986
     # https://github.com/renpy/renpy/pull/6987
+    # https://github.com/renpy/renpy/pull/6989
     ./revert-breaking.patch
   ];
 

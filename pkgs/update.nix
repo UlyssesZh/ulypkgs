@@ -6,6 +6,7 @@
   git,
   nix,
   ulypkgsPackages,
+  packages ? ulypkgsPackages,
 }:
 
 writeShellApplication {
@@ -89,7 +90,7 @@ writeShellApplication {
           failedUpdates+=(${attr})
         fi
       ''
-  ) ulypkgsPackages
+  ) packages
   + ''
     rm "$original"
 
