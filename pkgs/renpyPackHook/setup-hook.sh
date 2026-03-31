@@ -80,6 +80,24 @@ renpyPackFonts() {
   fi
 }
 
+renpyPackVideos() {
+  local gameHome="$1"
+
+  rpaFile="$gameHome/game/videos.rpa"
+  files=()
+  originalFiles=()
+  while IFS= read -r -d '' file; do
+    files+=("${file#"$gameHome/game/"}=$file")
+    originalFiles+=("$file")
+  done < <(find "$gameHome/game" -type f \( -iname "*.mp4" -o -iname "*.webm" -o -iname "*.mpg" -o -iname "*.mpeg" \) -print0)
+  if [[ ${#files[@]} -gt 0 ]]; then
+    echo "Packing videos in $gameHome/game to $rpaFile"
+    rpatool -c "$rpaFile"
+    printf '%s\0' "${files[@]}" | xargs -0 rpatool -a "$rpaFile"
+    printf '%s\0' "${originalFiles[@]}" | xargs -0 rm
+  fi
+}
+
 renpyPack() {
   local gameHome="$1"
   if [[ -z "${dontRenpyPackImages-}" ]]; then
@@ -93,6 +111,9 @@ renpyPack() {
   fi
   if [[ -z "${dontRenpyPackFonts-}" ]]; then
     renpyPackFonts "$gameHome"
+  fi
+  if [[ -z "${dontRenpyPackVideos-}" ]]; then
+    renpyPackVideos "$gameHome"
   fi
 }
 

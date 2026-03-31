@@ -4,6 +4,7 @@
   ulypkgsPackages,
   repoName ? "ulypkgs",
   repoBaseUrl ? "https://github.com/UlyssesZh/ulypkgs/blob/master",
+  basePath ? toString ../.,
   packages ? ulypkgsPackages,
 }:
 
@@ -15,7 +16,7 @@ writeTextFile {
     <html lang="en-US">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>ulypkgs</title>
+        <title>${repoName}</title>
       </head>
       <body>
         <h1>${repoName}</h1>
@@ -25,7 +26,7 @@ writeTextFile {
             attr: package:
             if lib.isDerivation package then
               ''
-                <li><details>
+                <li id="${attr}"><details>
                   <summary><code>${attr}</code> (${package.name})</summary>
                   ${lib.optionalString (package ? meta.description) "<p>${package.meta.description}</p>"}
                   ${lib.optionalString
@@ -59,10 +60,10 @@ writeTextFile {
                         match = builtins.match "(.+):([0-9]+)" package.meta.position;
                         file = builtins.elemAt match 0;
                         line = builtins.elemAt match 1;
-                        relativeFile = lib.removePrefix basePath file;
-                        basePath = "${toString ../.}/";
+                        relativeFile = lib.removePrefix basePathSlash file;
+                        basePathSlash = "${basePath}/";
                       in
-                      if lib.hasPrefix basePath file then
+                      if lib.hasPrefix basePathSlash file then
                         "<a href=\"${repoBaseUrl}/${relativeFile}#L${line}\" target=\"_blank\"><code>${relativeFile}:${line}</code></a>"
                       else
                         "<code>${package.meta.position}</code>"

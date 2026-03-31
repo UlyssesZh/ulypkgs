@@ -77,6 +77,8 @@ let
 
     ### Games
 
+    evermore = callPackage ./evermore { };
+
     katawa-shoujo = callPackage ./katawa-shoujo { };
 
     once-in-a-lifetime = callPackage ./once-in-a-lifetime { };

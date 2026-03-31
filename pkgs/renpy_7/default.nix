@@ -32,10 +32,14 @@
   withDistributedLibs ? false,
   # set this to true if you additionally want to distribute games for aarch64-linux
   # this implies withDistributedLibs = true because it also includes the libraries for other platforms
-  withAarch64LinuxDistributedLibs ? false,
+  withAarch64LinuxDistributedLibs ?
+    withDistributedLibs && stdenv.targetPlatform.isAarch64 && stdenv.targetPlatform.isLinux,
   # notice that you still cannot distribute for non-desktop platforms because they require downloading additional files
 }:
 
+# technically we can support cross-compilation by first compiling a renpy for the build platform besides a renpy for the host platform
+# and we can use the former to compile the rpy{,m} files but install the latter to $out
+# but let's not bother
 assert lib.assertMsg (
   stdenv.hostPlatform == stdenv.buildPlatform
 ) "Ren'Py cannot be cross-compiled because it needs to run itself during the build phase.";
@@ -101,6 +105,7 @@ stdenv.mkDerivation (finalAttrs: {
     # https://github.com/renpy/renpy/pull/6978
     ./new-project-prefix.patch
 
+    # compatibility patches for old games
     # https://github.com/renpy/renpy/pull/6986
     # https://github.com/renpy/renpy/pull/6987
     # https://github.com/renpy/renpy/pull/6989
@@ -114,6 +119,9 @@ stdenv.mkDerivation (finalAttrs: {
     # optional dependencies are actually required
     substituteInPlace module/setuplib.py \
       --replace-fail "def include(header, directory=None, optional=True):" "def include(header, directory=None, optional=False):"
+
+    # enable parallel compilation of cythonized c files to greatly speed up the build
+    cat ${./parallel_setup.py} >> module/setuplib.py
 
     patchShebangs --build module/setup.py
 
@@ -176,6 +184,8 @@ stdenv.mkDerivation (finalAttrs: {
   buildPhase = ''
     runHook preBuild
 
+    # cannot use -j $NIX_BUILD_CORES here because distutils does not recognize the option
+    # instead use a monkey patch at parallel_setup.py
     module/setup.py build_ext
 
     # instead of having --inplace option for build_ext, copy them here manually instead
@@ -259,19 +269,19 @@ stdenv.mkDerivation (finalAttrs: {
 
     binSrc = fetchzip {
       url = "https://www.renpy.org/dl/${finalAttrs.passthru.semver}/renpy-${finalAttrs.passthru.semver}-sdk.tar.bz2";
-      hash = "";
+      hash = "sha256-+rEsQGp/A31q1P2VEVtPZHlJgnyPvGk3iaGYDx2A/n4=";
     };
 
     binSrcArm = fetchzip {
       url = "https://www.renpy.org/dl/${finalAttrs.passthru.semver}/renpy-${finalAttrs.passthru.semver}-sdkarm.tar.bz2";
-      hash = "";
+      hash = "sha256-yRSUM+CAx+EDsWSQzZc1g6YGTLCm3b6/ejlFWpZy7ck=";
     };
 
     updateScript = ./update.sh;
   };
 
   meta = {
-    description = "Visual Novel Engine";
+    description = "Visual Novel Engine (last major version that supports Python 2)";
     mainProgram = "renpy";
     homepage = "https://renpy.org/";
     changelog = "https://renpy.org/doc/html/changelog.html";

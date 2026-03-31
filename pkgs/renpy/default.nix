@@ -32,10 +32,14 @@
   withDistributedLibs ? false,
   # set this to true if you additionally want to distribute games for aarch64-linux
   # this implies withDistributedLibs = true because it also includes the libraries for other platforms
-  withAarch64LinuxDistributedLibs ? false,
+  withAarch64LinuxDistributedLibs ?
+    withDistributedLibs && stdenv.targetPlatform.isAarch64 && stdenv.targetPlatform.isLinux,
   # notice that you still cannot distribute for non-desktop platforms because they require downloading additional files
 }:
 
+# technically we can support cross-compilation by first compiling a renpy for the build platform besides a renpy for the host platform
+# and we can use the former to compile the rpy{,m} files but install the latter to $out
+# but let's not bother
 assert lib.assertMsg (
   stdenv.hostPlatform == stdenv.buildPlatform
 ) "Ren'Py cannot be cross-compiled because it needs to run itself during the build phase.";
