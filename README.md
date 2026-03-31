@@ -1,5 +1,7 @@
 # ulypkgs
 
+[![Garnix badge](https://img.shields.io/endpoint.svg?url=https://garnix.io/api/badges/UlyssesZh/ulypkgs)](https://garnix.io/repo/UlyssesZh/ulypkgs)
+
 The personal Nix packages collection of UlyssesZhan.
 
 ## Features
@@ -107,6 +109,16 @@ You can also use it as an overlay with flakes:
     }).hello;
   };
 }
+```
+
+## Binary caches
+
+Binary caches are available on Garnix's public caches.
+Add the following lines to your Nix configuration if you trust their build infrastructure:
+
+```ini
+substituters = https://cache.garnix.io
+trusted-public-keys = cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=
 ```
 
 ## Contributing

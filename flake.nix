@@ -15,7 +15,9 @@
     {
       call = args: import ./. (args // (if args ? nixpkgs then { } else { inherit nixpkgs; }));
 
-      packages = forAllSystems (pkgs: pkgs.ulypkgsPackages);
+      packages = forAllSystems (
+        pkgs: pkgs.lib.filterAttrs (attr: package: pkgs.lib.isDerivation package) pkgs.ulypkgsPackages
+      );
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
 
