@@ -40,7 +40,7 @@ shrinkPng() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       if magick "$file" -strip -quality "$pngShrinkQualityTarget" "$shrinkedFile"; then
         _afterShrinking "$file" "$shrinkedFile"
@@ -70,7 +70,7 @@ shrinkJpeg() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       quality="$(magick identify -format "%Q" "$file")"
       if [[ -z "$quality" ]]; then
@@ -110,7 +110,7 @@ shrinkWebp() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       quality="$(magick identify -format "%Q" "$file")"
       if [[ -z "$quality" ]]; then
@@ -150,7 +150,7 @@ shrinkMp3() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       bitrate="$(ffprobe -v error -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file")"
       if [[ -z "$bitrate" ]]; then
@@ -192,7 +192,7 @@ shrinkOgg() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       bitrate="$(ffprobe -v error -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "$file")"
       if [[ -z "$bitrate" ]]; then
@@ -234,7 +234,7 @@ shrinkWebm() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       if ffmpeg -y -v error -i "$file" -crf "$webmShrinkCrfTarget" -b:v 0 -map_metadata -1 "$shrinkedFile"; then
         _afterShrinking "$file" "$shrinkedFile"
@@ -264,7 +264,7 @@ shrinkMpeg() {
       wait
     fi
     {
-      set -euo pipefail
+      set -eo pipefail
       shrinkedFile="$(_shrinkedFile "$file" "$tempDir")"
       if ffmpeg -y -v error -i "$file" -crf "$mpegShrinkCrfTarget" -b:v 0 -map_metadata -1 "$shrinkedFile"; then
         _afterShrinking "$file" "$shrinkedFile"

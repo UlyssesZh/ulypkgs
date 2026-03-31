@@ -10,6 +10,10 @@ The personal Nix packages collection of UlyssesZhan.
 - Ren'Py 7.
 - Games.
 
+## Packages
+
+See the [listing](https://ulysseszh.github.io/ulypkgs).
+
 ## Usage
 
 Quick start (some packages that are marked unfree or insecure in nixpkgs may be installed in this way!):

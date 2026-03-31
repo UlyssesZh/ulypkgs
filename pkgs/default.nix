@@ -8,6 +8,10 @@ let
 
     inherit ulypkgsPackages;
 
+    ulypkgsPackagesDerivationsOnly = lib.filterAttrs (attr: package: lib.isDerivation package) (
+      removeAttrs ulypkgsPackages [ "ulypkgsPackagesDerivationsOnly" ] # avoid infrec
+    );
+
     listing = callPackage ./listing.nix { };
 
     update = callPackage ./update.nix { };
@@ -57,6 +61,18 @@ let
 
     ### Development
 
+    python2 =
+      (pkgsSuper.python2.override {
+        self = ulypkgsPackages.python2;
+        packageOverrides = import ./python2/packages.nix;
+      }).overrideAttrs
+        (attrsSuper: {
+          meta = attrsSuper.meta // {
+            mainProgram = "python";
+          };
+        });
+    python2Packages = ulypkgsPackages.python2.pkgs;
+
     # https://github.com/NixOS/nixpkgs/pull/504002
     renpy = callPackage ./renpy { };
 
@@ -86,20 +102,8 @@ let
     summertime-saga = callPackage ./summertime-saga { };
   };
 
-  pkgsOverridden = {
+  unexported = {
     pythonPackagesExtensions = pkgsSuper.pythonPackagesExtensions ++ [ (import ./python/packages.nix) ];
-
-    python2 =
-      (pkgsSuper.python2.override {
-        self = pkgsOverridden.python2;
-        packageOverrides = import ./python2/packages.nix;
-      }).overrideAttrs
-        (attrsSuper: {
-          meta = attrsSuper.meta // {
-            mainProgram = "python";
-          };
-        });
-    python2Packages = pkgsOverridden.python2.pkgs;
   };
 in
-ulypkgsPackages // pkgsOverridden
+ulypkgsPackages // unexported
