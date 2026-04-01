@@ -4,7 +4,7 @@
   ulypkgsPackages,
   repoName ? "ulypkgs",
   repoBaseUrl ? "https://github.com/UlyssesZh/ulypkgs/blob/master",
-  basePath ? toString ../.,
+  basePath ? toString ../..,
   packages ? ulypkgsPackages,
 }:
 

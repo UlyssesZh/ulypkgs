@@ -61,5 +61,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     maintainers = with lib.maintainers; [ ulysseszhan ];
     platforms = lib.platforms.all;
     mainProgram = "Evermore";
+    sourceProvenance = with lib.sourceTypes; [ binaryBytecode ];
   };
 })

@@ -12,9 +12,9 @@ let
       removeAttrs ulypkgsPackages [ "ulypkgsPackagesDerivationsOnly" ] # avoid infrec
     );
 
-    listing = callPackage ./listing.nix { };
+    listing = callPackage ./listing { };
 
-    update = callPackage ./update.nix { };
+    update = callPackage ./update { };
 
     ### Build support
 
@@ -29,11 +29,23 @@ let
 
     fetchGoogleDrive = callPackage ./fetchGoogleDrive { };
 
+    # https://github.com/NixOS/nixpkgs/pull/505540
+    fetchItchIo = callPackage ./fetchItchIo { };
+
     fetchMediaFire = callPackage ./fetchMediaFire { };
 
     fetchMega = callPackage ./fetchMega { };
 
     fetchWebIcon = callPackage ./fetchWebIcon { };
+
+    genericUnpackHook = callPackage ./genericUnpackHook { };
+
+    godotWrapHook = callPackage ./godotWrapHook { };
+    godot3WrapHook = pkgs.godotWrapHook.override {
+      targetPackages = pkgs.targetPackages // {
+        godot = pkgs.godot3;
+      };
+    };
 
     # buildPhase
     renpyBuildHook = callPackage ./renpyBuildHook { };
@@ -96,6 +108,8 @@ let
     evermore = callPackage ./evermore { };
 
     katawa-shoujo = callPackage ./katawa-shoujo { };
+
+    legbreaker = callPackage ./legbreaker { };
 
     once-in-a-lifetime = callPackage ./once-in-a-lifetime { };
 

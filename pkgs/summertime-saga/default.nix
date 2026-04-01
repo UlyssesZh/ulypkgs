@@ -68,5 +68,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     maintainers = with lib.maintainers; [ ulysseszhan ];
     platforms = lib.platforms.all;
     mainProgram = "SummertimeSaga";
+    sourceProvenance = with lib.sourceTypes; [ binaryBytecode ];
   };
 })
