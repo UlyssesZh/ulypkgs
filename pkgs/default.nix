@@ -68,6 +68,9 @@ let
     # postInstall
     resizeIcons = callPackage ./resizeIcons { };
 
+    # postInstall & preFixup (delete executables)
+    rpgNwjsWrapHook = callPackage ./rpgNwjsWrapHook { };
+
     # postBuild
     shrinkAssets = callPackage ./shrinkAssets { };
 

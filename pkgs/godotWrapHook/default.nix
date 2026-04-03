@@ -9,7 +9,10 @@
 makeSetupHook {
   name = "godot-wrap-hook";
 
-  propagatedBuildInputs = [ makeWrapper file ];
+  propagatedBuildInputs = [
+    makeWrapper
+    file
+  ];
 
   substitutions = {
     godot = lib.getExe targetPackages.godot;
