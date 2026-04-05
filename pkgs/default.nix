@@ -108,6 +108,8 @@ let
 
     ### Games
 
+    eternum = callPackage ./eternum { };
+
     evermore = callPackage ./evermore { };
 
     katawa-shoujo = callPackage ./katawa-shoujo { };

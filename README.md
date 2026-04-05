@@ -117,7 +117,8 @@ You can also use it as an overlay with flakes:
 
 ## Binary caches
 
-Binary caches are available on Garnix's public caches.
+Binary caches are available on Garnix's public caches,
+except for packages that require itch.io API keys to download sources.
 Add the following lines to your Nix configuration if you trust their build infrastructure:
 
 ```ini

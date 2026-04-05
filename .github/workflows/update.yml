@@ -7,7 +7,7 @@ on:
 
 jobs:
   update:
-    if: github.repository == 'UlyssesZh/personal-nix-packages'
+    if: github.repository == 'UlyssesZh/ulypkgs'
     runs-on: ubuntu-latest
     permissions:
       contents: write

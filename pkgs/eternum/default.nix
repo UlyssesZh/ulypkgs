@@ -19,13 +19,13 @@
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
-  pname = "once-in-a-lifetime";
-  version = "1.0.0";
+  pname = "eternum";
+  version = "0.9.5";
 
   src = fetchMediaFire {
-    name = "Onceinalifetime-${finalAttrs.version}-pc.zip";
-    fileId = "qkosfzge7ii4bn4";
-    hash = "sha256-HUnp56TCHGd7p25xqkNXI+nMlN9rjKJVUHP6jwWUF+w=";
+    name = "Eternum-${finalAttrs.version}-pc.zip";
+    fileId = "uwgw7k9rcqg9kvj";
+    hash = "sha256-Qean+9c+GEL6akTD4xEjfpxPlOSmC21lEc5q6sfoH5Q=";
   };
 
   icon = "game/gui/window_icon.png";
@@ -47,23 +47,25 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   desktopItems = [
     (makeDesktopItem {
-      name = "once-in-a-lifetime";
-      desktopName = "Once in a Lifetime";
+      name = "eternum";
+      desktopName = "Eternum";
       comment = finalAttrs.meta.description;
       exec = "${finalAttrs.meta.mainProgram} %U";
-      icon = "once-in-a-lifetime";
+      icon = "eternum";
       categories = [ "Game" ];
     })
   ];
 
+  passthru.updateScript = ./update.sh;
+
   meta = {
-    description = "Choice-based visual novel made in Ren'py with tons of romance, mystery, humor, and much more";
-    homepage = "https://caribdis.itch.io/once-in-a-lifetime";
-    downloadPage = "https://caribdis.itch.io/once-in-a-lifetime";
-    changelog = "https://caribdis.itch.io/once-in-a-lifetime/devlog";
+    description = "Adult visual novel about a story happening in Kredon and involving a hyper-reality MMORPG";
+    homepage = "https://caribdis.itch.io/eternum";
+    downloadPage = "https://caribdis.itch.io/eternum";
+    changelog = "https://caribdis.itch.io/eternum/devlog";
     license = lib.licenses.unfree;
     maintainers = with lib.maintainers; [ ulysseszhan ];
     platforms = lib.platforms.all;
-    mainProgram = "Onceinalifetime";
+    mainProgram = "Eternum";
   };
 })
