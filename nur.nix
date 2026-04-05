@@ -1,5 +1,5 @@
 {
-  pkgs ? import ./nixpkgs.nix { },
+  pkgs ? import (import ./nixpkgs.nix) { },
   ...
 }:
 (pkgs.appendOverlays [ (import ./pkgs) ]).ulypkgsPackagesDerivationsOnly

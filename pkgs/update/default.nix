@@ -1,25 +1,21 @@
 {
   lib,
-  writeShellApplication,
-  diffutils,
-  coreutils,
-  git,
-  nix,
+  writeTextFile,
+  runtimeShell,
   ulypkgsPackages,
   packages ? ulypkgsPackages,
 }:
 
-writeShellApplication {
-  name = "update.sh";
+writeTextFile {
+  name = "update";
 
-  runtimeInputs = [
-    coreutils
-    diffutils
-    git
-    nix
-  ];
+  destination = "/bin/update.sh";
 
   text = ''
+    #!${runtimeShell}
+
+    set -euo pipefail
+
     export NIX_GITHUB_PRIVATE_USERNAME="$GITHUB_TOKEN"
     export NIX_GITHUB_PRIVATE_PASSWORD=x-oauth-basic
     export NIX_ITCHIO_API_KEY="$ITCHIO_API_KEY"
@@ -34,8 +30,8 @@ writeShellApplication {
   + lib.concatMapAttrsStringSep "\n" (
     attr: package:
     let
-      updateScript' = package.passthru.updateScript or null;
-      updateScript = if lib.isList updateScript' then lib.head updateScript' else updateScript';
+      updateScript' = package.updateScript.command or package.updateScript or null;
+      updateScript = if updateScript' != null then lib.escapeShellArgs (lib.toList updateScript') else null;
     in
     if !lib.isDerivation package then
       ''
@@ -54,6 +50,11 @@ writeShellApplication {
         file="$(nix-instantiate --eval -A ${attr}.meta.position | cut -d'"' -f2)"
         file="''${file%:[0-9]*}"
         cp "$file" "$original"
+
+        export UPDATE_NIX_NAME="${package.name}"
+        export UPDATE_NIX_PNAME="${package.pname or ""}"
+        export UPDATE_NIX_OLD_VERSION="${package.version or ""}"
+        export UPDATE_NIX_ATTR_PATH="${attr}"
 
         if ${updateScript}; then
           echo "update: Updated '${attr}' successfully"
@@ -133,6 +134,8 @@ writeShellApplication {
       fi
     fi
   '';
+
+  executable = true;
 
   meta.description = "Script to update packages in this repository by running their update scripts and building the updated packages to verify the updates";
 }

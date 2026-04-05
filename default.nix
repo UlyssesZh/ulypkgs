@@ -1,5 +1,5 @@
 {
-  nixpkgs ? ./nixpkgs.nix,
+  nixpkgs ? import ./nixpkgs.nix,
   config ? { },
   overlays ? [ ],
   ...

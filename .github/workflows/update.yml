@@ -2,6 +2,11 @@ name: Update packages
 
 on:
   workflow_dispatch:
+    inputs:
+      tmate:
+        description: 'Start a tmate session'
+        default: 'false'
+        required: false
   schedule:
     - cron: '23 8 * * *' # daily
 
@@ -19,7 +24,6 @@ jobs:
       - name: Set up Nix
         uses: cachix/install-nix-action@v31
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
           install_options: --no-daemon # pass NIX_GITHUB_PRIVATE_USERNAME etc to nix commands
 
       - name: Git config
@@ -27,10 +31,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Start tmate
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: true
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.tmate == 'true' }}
+
       - name: Update
         id: update
-        run: nix run .#update
+        run: |
+          nix-build nixpkgs.nix --no-out-link # update scripts generally uses nix-shell and nix-instantiate, which uses default.nix instead of flake.nix
+          nix run .#update
         env:
+          NIX_PATH: nixpkgs=${{ github.workspace }}
           NIX_UPDATE_MAKE_COMMIT: '1'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MEGA_EMAIL: ${{ secrets.MEGA_EMAIL }}
