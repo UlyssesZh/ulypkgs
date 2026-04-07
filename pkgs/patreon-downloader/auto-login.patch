@@ -30,11 +30,14 @@ index f829a43..09467ec 100644
  
              if (settings.IsUseLegacyFilenaming && (settings.FileExistsAction == FileExistsAction.BackupIfDifferent || settings.FileExistsAction == FileExistsAction.ReplaceIfDifferent))
 diff --git a/PatreonDownloader.Implementation/Models/PatreonDownloaderSettings.cs b/PatreonDownloader.Implementation/Models/PatreonDownloaderSettings.cs
-index 4a05085..cd7935d 100644
+index 4a05085..29d8eed 100644
 --- a/PatreonDownloader.Implementation/Models/PatreonDownloaderSettings.cs
 +++ b/PatreonDownloader.Implementation/Models/PatreonDownloaderSettings.cs
-@@ -54,6 +54,8 @@ namespace PatreonDownloader.Implementation.Models
+@@ -52,8 +52,11 @@ namespace PatreonDownloader.Implementation.Models
+         public string LoginPageAddress { get { return "https://www.patreon.com/login"; } }
+         public string LoginCheckAddress { get { return "https://www.patreon.com/api/badges?json-api-version=1.0&json-api-use-default-includes=false&include=[]"; } }
          public string CaptchaCookieRetrievalAddress { get { return "https://www.patreon.com/home"; } }
++        public string AuthAddress { get { return "https://www.patreon.com/api/auth"; } }
          public Uri RemoteBrowserAddress { get; init; }
          public bool IsHeadlessBrowser { get; init; }
 +        public string LoginEmail { get; init; }
@@ -44,10 +47,21 @@ index 4a05085..cd7935d 100644
          {
 Submodule submodules/UniversalDownloaderPlatform contains modified content
 diff --git a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/IPuppeteerSettings.cs b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/IPuppeteerSettings.cs
-index 410e20c..18d1415 100644
+index 410e20c..a1c1295 100644
 --- a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/IPuppeteerSettings.cs
 +++ b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/IPuppeteerSettings.cs
-@@ -32,5 +32,13 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Interfaces
+@@ -21,6 +21,10 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Interfaces
+         /// </summary>
+         public string CaptchaCookieRetrievalAddress { get; }
+         /// <summary>
++        /// Address of API request for checking account existence used by Patreon login page. Finishing this request signifies being ready to enter password.
++        /// </summary>
++        public string AuthAddress { get; }
++        /// <summary>
+         /// Address of the remote browser, if not set internal browser will be used
+         /// </summary>
+         public Uri RemoteBrowserAddress { get; init; }
+@@ -32,5 +36,13 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Interfaces
          /// Proxy server address
          /// </summary>
          public string ProxyServerAddress { get; init; }
@@ -62,7 +76,7 @@ index 410e20c..18d1415 100644
      }
  }
 diff --git a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/Wrappers/Browser/IWebPage.cs b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/Wrappers/Browser/IWebPage.cs
-index bc93511..8cdf0b0 100644
+index bc93511..d725637 100644
 --- a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/Wrappers/Browser/IWebPage.cs
 +++ b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Interfaces/Wrappers/Browser/IWebPage.cs
 @@ -1,6 +1,7 @@
@@ -73,10 +87,12 @@ index bc93511..8cdf0b0 100644
  
  namespace UniversalDownloaderPlatform.PuppeteerEngine.Interfaces.Wrappers.Browser
  {
-@@ -15,6 +16,9 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Interfaces.Wrappers.Browse
+@@ -15,6 +16,11 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Interfaces.Wrappers.Browse
          Task SetUserAgentAsync(string userAgent);
          Task<string> GetContentAsync();
          Task<IWebRequest> WaitForRequestAsync(Func<IRequest, bool> predicate, WaitForOptions options = null);
++        Task<IWebResponse> WaitForResponseAsync(Func<IResponse, bool> predicate, WaitForOptions options = null);
++        Task WaitForNetworkIdleAsync(WaitForNetworkIdleOptions options = null);
 +        Task WaitForSelectorAsync(string selector, WaitForSelectorOptions options = null);
 +        Task TypeAsync(string selector, string text, TypeOptions options = null);
 +        Task ClickAsync(string selector, ClickOptions options = null);
@@ -84,53 +100,176 @@ index bc93511..8cdf0b0 100644
          Task CloseAsync(PageCloseOptions options = null);
      }
 diff --git a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/PuppeteerCookieRetriever.cs b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/PuppeteerCookieRetriever.cs
-index 49cca23..0e4f33e 100644
+index 49cca23..aebc1c3 100644
 --- a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/PuppeteerCookieRetriever.cs
 +++ b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/PuppeteerCookieRetriever.cs
-@@ -100,6 +100,8 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
+@@ -7,6 +7,7 @@ using System.Threading.Tasks;
+ using NLog;
+ using UniversalDownloaderPlatform.Common.Interfaces;
+ using PuppeteerSharp;
++using PuppeteerSharp.Input;
+ using UniversalDownloaderPlatform.PuppeteerEngine.Interfaces;
+ using UniversalDownloaderPlatform.PuppeteerEngine.Interfaces.Wrappers.Browser;
+ using UniversalDownloaderPlatform.Common.Interfaces.Models;
+@@ -23,7 +24,7 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
+         private IPuppeteerSettings _settings;
+         private bool _isHeadlessBrowser;
+         private bool _isRemoteBrowser;
+-
++        private bool _shouldTryAutoLogin;
+ 
+         /// <summary>
+         /// Create new instance of PuppeteerCookieRetriever
+@@ -40,6 +41,7 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
+         public Task BeforeStart(IUniversalDownloaderPlatformSettings settings)
+         {
+             _settings = settings as IPuppeteerSettings;
++            _shouldTryAutoLogin = !string.IsNullOrWhiteSpace(_settings.LoginEmail) && !string.IsNullOrWhiteSpace(_settings.LoginPassword);
+ 
+             if (_settings.RemoteBrowserAddress != null)
+             {
+@@ -83,12 +85,12 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
+                 if (!await IsLoggedIn(response))
+                 {
+                     _logger.Debug("We are NOT logged in, opening login page");
+-                    if (_isRemoteBrowser)
++                    if (_isRemoteBrowser && !_shouldTryAutoLogin)
+                     {
+                         await page.CloseAsync();
+                         throw new Exception("You are not logged in into your account in remote browser. Please login and restart application.");
+                     }
+-                    if (_puppeteerEngine.IsHeadless)
++                    if (_puppeteerEngine.IsHeadless && !_shouldTryAutoLogin)
+                     {
+                         _logger.Debug("Puppeteer is in headless mode, restarting in full mode");
+                         browser = await RestartBrowser(false);
+@@ -100,7 +102,16 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
                      page.GoToAsync(_settings.LoginPageAddress, null);
  #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
  
-+                    await TryAutoLogin(page);
-+
-                     await page.WaitForRequestAsync(request => { return request.Url.Contains(_settings.LoginCheckAddress); });
+-                    await page.WaitForRequestAsync(request => { return request.Url.Contains(_settings.LoginCheckAddress); });
++                    if (_shouldTryAutoLogin)
++                    {
++                        _logger.Debug("Credentials were supplied, attempting automatic Patreon login");
++                        await TryAutoLogin(page);
++                    }
++                    else
++                    {
++                        _logger.Debug("Waiting for user to log in Patreon manually");
++                        await page.WaitForRequestAsync(request => { return request.Url.Contains(_settings.LoginCheckAddress); });
++                    }
                  }
                  else
-@@ -118,6 +120,32 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
+                 {
+@@ -118,6 +129,93 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine
              await page.CloseAsync();
          }
  
 +        private async Task TryAutoLogin(IWebPage page)
 +        {
-+            if (string.IsNullOrWhiteSpace(_settings.LoginEmail) || string.IsNullOrWhiteSpace(_settings.LoginPassword))
-+                return;
++            try
++            {
++                await page.WaitForNetworkIdleAsync(new WaitForNetworkIdleOptions()
++                {
++                    // The hanging requests are:
++                    // https://accounts.google.com/gsi/client
++                    // https://www.facebook.com/x/oauth/status
++                    // https://www.google.com/recaptcha/enterprise/webworker.js
++                    Concurrency = 3,
++                    IdleTime = 1000,
++                    Timeout = 10000,
++                });
++            }
++            catch (WaitTaskTimeoutException) // In case there are other hanging requests (they seem to appear randomly)
++            {
++                _logger.Debug("Waiting for network idle timeout; proceed anyway and hope for the best");
++            }
 +
-+            _logger.Debug("Credentials were supplied, attempting automatic Patreon login");
++            IWebResponse response = await EnterAndSubmit(page, "input[aria-label=\"Email\"]", _settings.LoginEmail);
++            if ((await response.TextAsync()).Contains("\"next_auth_step\":\"signup\""))
++            {
++                throw new Exception("There does not exist an account with the provided email");
++            }
++            await EnterAndSubmit(page, "input[aria-label=\"Password\"]", _settings.LoginPassword);
 +
-+            const string emailSelector = "input[aria-label=\"Email\"]";
-+            const string passwordSelector = "input[aria-label=\"Password\"]";
-+            const string submitSelector = "button[type=\"submit\"]";
++            // Not sure why this is needed, but otherwise GoToAsync will throw PuppeteerSharp.NavigationException: net::ERR_ABORTED
++            await page.CloseAsync();
++        }
 +
-+            await page.WaitForSelectorAsync(emailSelector);
-+            await Task.Delay(800);
-+            await page.TypeAsync(emailSelector, _settings.LoginEmail);
-+            await page.WaitForSelectorAsync(submitSelector);
++        private async Task<IWebResponse> EnterAndSubmit(IWebPage page, string selector, string text)
++        {
++            const string submitSelector = "button[type=\"submit\"][aria-disabled=\"false\"]";
++
++            await page.WaitForSelectorAsync(selector, new WaitForSelectorOptions() { Timeout = 10000 });
++            _logger.Debug($"Found {selector}, entering information");
++            await Task.Delay(300);
++
++            int retry;
++            for (retry = 0; retry < 5; retry++)
++            {
++                await page.TypeAsync(selector, text, new TypeOptions() { Delay = 50 });
++                try
++                {
++                    await page.WaitForSelectorAsync(submitSelector, new WaitForSelectorOptions() { Timeout = 3000 });
++                }
++                catch (WaitTaskTimeoutException)
++                {
++                    _logger.Debug($"Submit button did not appear; retrying {retry}/5");
++                    await page.ClickAsync(selector, new ClickOptions()
++                    {
++                        Count = 3, // hopefully select all text in the field
++                        Delay = 50,
++                        OffSet = new Offset(10, 10)
++                    });
++                    continue;
++                }
++                break;
++            }
++            if (retry == 5)
++            {
++                throw new Exception("Cannot find the submit button after 5 tries");
++            }
++
 +            await Task.Delay(300);
 +            await page.ClickAsync(submitSelector);
 +
-+            await page.WaitForSelectorAsync(passwordSelector);
-+            await Task.Delay(300);
-+            await page.TypeAsync(passwordSelector, _settings.LoginPassword);
-+            await page.WaitForSelectorAsync(submitSelector);
-+            await Task.Delay(300);
-+            await page.ClickAsync(submitSelector);
++            IWebResponse authResponse = await page.WaitForResponseAsync(
++                response => { return response.Url.Contains(_settings.AuthAddress); },
++                new WaitForOptions() { Timeout = 10000 }
++            );
++            switch (authResponse.Status)
++            {
++                case HttpStatusCode.OK:
++                    return authResponse;
++                case HttpStatusCode.BadRequest:
++                    throw new Exception($"Auth returned non-OK code: {authResponse.Status}; you probably provided an invalid email");
++                case HttpStatusCode.TooManyRequests:
++                    throw new Exception($"Auth returned non-OK code: {authResponse.Status}; you probably tried logging in for too many times");
++                case HttpStatusCode.Forbidden:
++                    throw new Exception($"Auth returned non-OK code: {authResponse.Status}; you either provided a wrong password or are blocked");
++                default:
++                    throw new Exception($"Auth returned non-OK code: {authResponse.Status}");
++            }
 +        }
 +
          /// <summary>
          /// Perform check if the received response contains data which can be used to assume that we are logged in
          /// </summary>
+diff --git a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/UniversalDownloaderPlatform.PuppeteerEngine.csproj b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/UniversalDownloaderPlatform.PuppeteerEngine.csproj
+index a2a0c00..cca715a 100644
+--- a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/UniversalDownloaderPlatform.PuppeteerEngine.csproj
++++ b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/UniversalDownloaderPlatform.PuppeteerEngine.csproj
+@@ -9,7 +9,7 @@
+     <PackageReference Include="Ninject" Version="3.3.6" />
+     <PackageReference Include="ninject.extensions.conventions" Version="3.3.0" />
+     <PackageReference Include="NLog" Version="6.0.3" />
+-    <PackageReference Include="PuppeteerSharp" Version="20.2.2" />
++    <PackageReference Include="PuppeteerSharp" Version="24.40.0" />
+   </ItemGroup>
+ 
+   <ItemGroup>
 diff --git a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Wrappers/Browser/WebPage.cs b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Wrappers/Browser/WebPage.cs
-index 09138ce..fe4f40e 100644
+index 09138ce..71f1487 100644
 --- a/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Wrappers/Browser/WebPage.cs
 +++ b/submodules/UniversalDownloaderPlatform/UniversalDownloaderPlatform.PuppeteerEngine/Wrappers/Browser/WebPage.cs
 @@ -2,6 +2,7 @@
@@ -141,10 +280,24 @@ index 09138ce..fe4f40e 100644
  using UniversalDownloaderPlatform.PuppeteerEngine.Interfaces.Wrappers.Browser;
  
  namespace UniversalDownloaderPlatform.PuppeteerEngine.Wrappers.Browser
-@@ -55,6 +56,24 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Wrappers.Browser
+@@ -55,6 +56,36 @@ namespace UniversalDownloaderPlatform.PuppeteerEngine.Wrappers.Browser
              return webRequest;
          }
  
++        public async Task<IWebResponse> WaitForResponseAsync(Func<IResponse, bool> predicate, WaitForOptions options = null)
++        {
++            await ConfigurePage();
++            IResponse response = await _page.WaitForResponseAsync(predicate, options);
++            IWebResponse webResponse = new WebResponse(response);
++            return webResponse;
++        }
++
++        public async Task WaitForNetworkIdleAsync(WaitForNetworkIdleOptions options = null)
++        {
++            await ConfigurePage();
++            await _page.WaitForNetworkIdleAsync(options);
++        }
++
 +        public async Task WaitForSelectorAsync(string selector, WaitForSelectorOptions options = null)
 +        {
 +            await ConfigurePage();
@@ -153,13 +306,11 @@ index 09138ce..fe4f40e 100644
 +
 +        public async Task TypeAsync(string selector, string text, TypeOptions options = null)
 +        {
-+            await ConfigurePage();
 +            await _page.TypeAsync(selector, text, options);
 +        }
 +
 +        public async Task ClickAsync(string selector, ClickOptions options = null)
 +        {
-+            await ConfigurePage();
 +            await _page.ClickAsync(selector, options);
 +        }
 +
