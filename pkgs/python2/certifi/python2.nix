@@ -1,8 +1,8 @@
 {
   lib,
+  fetchFromGitHub,
   fetchPypi,
   buildPythonPackage,
-  certifi,
 }:
 
 buildPythonPackage rec {
@@ -14,8 +14,15 @@ buildPythonPackage rec {
     sha256 = "25b64c7da4cd7479594d035c08c2d809eb4aab3a26e5a990ea98cc450c320f1f";
   };
 
+  certifiSrc = fetchFromGitHub {
+    owner = "certifi";
+    repo = "python-certifi";
+    rev = "2021.10.08";
+    sha256 = "sha256-SFb/spVHK15b53ZG1P147DcTjs1dqR0+MBXzpE+CWpo=";
+  };
+
   postPatch = ''
-    cp ${certifi.src}/certifi/cacert.pem certifi/cacert.pem
+    cp ${certifiSrc}/certifi/cacert.pem certifi/cacert.pem
   '';
 
   pythonImportsCheck = [ "certifi" ];

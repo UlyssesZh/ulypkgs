@@ -2,10 +2,55 @@
 pythonPackages: pythonPackagesSuper:
 let
   inherit (pythonPackages) callPackage;
+  toPythonModule =
+    drv:
+    drv
+    // {
+      pythonModule = pythonPackages.python;
+      pythonPath = [ ];
+      requiredPythonModules = pythonPackages.requiredPythonModules drv.propagatedBuildInputs;
+      passthru = (drv.passthru or { }) // {
+        pythonModule = pythonPackages.python;
+        pythonPath = [ ];
+        requiredPythonModules = pythonPackages.requiredPythonModules drv.propagatedBuildInputs;
+      };
+    };
 in
 {
+  isPy27 = true;
+  isPy2 = true;
+  isPy37 = false;
+
   buildPythonPackage = callPackage ./buildPythonPackage {
-    buildPythonPackageSuper = pythonPackagesSuper.buildPythonPackage;
+    buildPythonPackageSuper = import ./mk-python-derivation.nix {
+      inherit (pythonPackages)
+        lib
+        python
+        stdenv
+        wrapPython
+        setuptools
+        pipBuildHook
+        pipInstallHook
+        pythonCatchConflictsHook
+        pythonImportsCheckHook
+        pythonOutputDistHook
+        pythonRemoveBinBytecodeHook
+        pythonRemoveTestsDirHook
+        setuptoolsBuildHook
+        wheelUnpackHook
+        eggUnpackHook
+        eggBuildHook
+        eggInstallHook
+        ;
+      inherit (pythonPackages.pkgs)
+        config
+        ensureNewerSourcesForZipFilesHook
+        unzip
+        update-python-libraries
+        ;
+      inherit toPythonModule;
+      namePrefix = "${pythonPackages.python.libPrefix}-";
+    };
   };
 
   alabaster = callPackage ./alabaster { };
@@ -30,7 +75,7 @@ in
 
   calver = callPackage ./calver { };
 
-  certifi = callPackage ./certifi/python2.nix { certifi = pythonPackagesSuper.certifi; };
+  certifi = callPackage ./certifi/python2.nix { };
 
   chardet = callPackage ./chardet/2.nix { };
 
@@ -115,7 +160,7 @@ in
   lpod = callPackage ./lpod { };
 
   marisa = callPackage ./marisa {
-    inherit (pythonPackagesSuper) marisa;
+    inherit (pythonPackages.pkgs) marisa;
   };
 
   markdown = callPackage ./markdown/3_1.nix { };
@@ -152,7 +197,7 @@ in
 
   protobuf = callPackage ./protobuf {
     disabled = pythonPackages.isPyPy;
-    protobuf = pythonPackagesSuper.protobuf3_17; # last version compatible with Python 2
+    protobuf = pythonPackages.pkgs.protobuf; # last version compatible with Python 2
   };
 
   psutil = callPackage ./psutil { };
@@ -160,7 +205,7 @@ in
   pyasn1 = callPackage ./pyasn1 { };
 
   pycairo = callPackage ./pycairo/1.18.nix {
-    inherit (pythonPackagesSuper.buildPackages) meson;
+    inherit (pythonPackages.pkgs.buildPackages) meson;
   };
 
   pycparser = callPackage ./pycparser { };
@@ -170,13 +215,13 @@ in
   pygments = callPackage ./pygments { };
 
   pygobject3 = callPackage ./pygobject/3.36.nix {
-    inherit (pythonPackagesSuper) meson;
+    inherit (pythonPackages.pkgs) meson;
   };
 
   pygtk = callPackage ./pygtk { };
 
   pyGtkGlade = pythonPackages.pygtk.override {
-    inherit (pythonPackagesSuper.gnome2) libglade;
+    inherit (pythonPackages.pkgs.gnome2) libglade;
   };
 
   pyjwt = callPackage ./pyjwt/1.nix { };
@@ -256,7 +301,7 @@ in
   werkzeug = callPackage ./werkzeug/1.nix { };
 
   wxPython30 = callPackage ./wxPython/3.0.nix {
-    wxGTK = pythonPackagesSuper.wxGTK30;
+    wxGTK = pythonPackages.pkgs.wxGTK30;
   };
 
   wxPython = pythonPackages.wxPython30;

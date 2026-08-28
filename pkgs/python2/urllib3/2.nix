@@ -3,13 +3,11 @@
   brotli,
   buildPythonPackage,
   certifi,
-  cryptography,
   python-dateutil,
   fetchpatch,
   fetchPypi,
   idna,
   mock,
-  pyopenssl,
   pysocks,
   pytest-freezegun,
   pytest-timeout,
@@ -38,9 +36,7 @@ buildPythonPackage rec {
   propagatedBuildInputs = [
     brotli
     certifi
-    cryptography
     idna
-    pyopenssl
     pysocks
   ];
 

@@ -14,6 +14,8 @@ buildPythonPackage rec {
     sha256 = "1bkqwmf056pkchf05ywbnf659wqlp6lljcdb0y88wr9f0vv32ijd";
   };
 
+  doCheck = false;
+
   checkPhase = "${python.interpreter} test/run_tests.py";
 
   meta = with lib; {

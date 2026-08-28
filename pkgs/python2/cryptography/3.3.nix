@@ -5,7 +5,7 @@
   fetchPypi,
   isPy27,
   ipaddress,
-  openssl_1_1,
+  openssl,
   cryptography-vectors,
   darwin,
   packaging,
@@ -40,7 +40,7 @@ buildPythonPackage rec {
     cffi
   ];
 
-  buildInputs = [ openssl_1_1 ] ++ lib.optional stdenv.isDarwin darwin.apple_sdk.frameworks.Security;
+  buildInputs = [ openssl ] ++ lib.optional stdenv.isDarwin darwin.apple_sdk.frameworks.Security;
   propagatedBuildInputs = [
     packaging
     six
