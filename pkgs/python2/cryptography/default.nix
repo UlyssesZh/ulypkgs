@@ -83,7 +83,8 @@ buildPythonPackage (finalAttrs: {
     '';
     homepage = "https://github.com/pyca/cryptography";
     changelog =
-      "https://cryptography.io/en/latest/changelog/#v" + replaceStrings [ "." ] [ "-" ] finalAttrs.version;
+      "https://cryptography.io/en/latest/changelog/#v"
+      + replaceStrings [ "." ] [ "-" ] finalAttrs.version;
     license = with licenses; [
       asl20
       bsd3

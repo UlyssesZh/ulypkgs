@@ -273,7 +273,9 @@ lib.extendMkDerivation {
         python.pythonOnBuildForHost
       ];
 
-      outputs = (attrs.outputs or [ "out" ]) ++ lib.optional (withDistOutput && !lib.elem "dist" (attrs.outputs or [ ])) "dist";
+      outputs =
+        (attrs.outputs or [ "out" ])
+        ++ lib.optional (withDistOutput && !lib.elem "dist" (attrs.outputs or [ ])) "dist";
 
       passthru = {
         inherit
