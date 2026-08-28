@@ -19,7 +19,7 @@
 
 assert wxGTK.unicode;
 
-buildPythonPackage rec {
+buildPythonPackage (finalAttrs: {
   pname = "wxPython";
   version = "3.0.2.0";
 
@@ -27,8 +27,8 @@ buildPythonPackage rec {
   doCheck = false;
 
   src = fetchurl {
-    url = "mirror://sourceforge/wxpython/wxPython-src-${version}.tar.bz2";
-    sha256 = "0qfzx3sqx4mwxv99sfybhsij4b5pc03ricl73h4vhkzazgjjjhfm";
+    url = "mirror://sourceforge/wxpython/wxPython-src-${finalAttrs.version}.tar.bz2";
+    hash = "sha256-1UEp5fvqT7gJHIeymAdgtywio4bLO53S7rySjvXo32E=";
   };
 
   dontUseSetuptoolsBuild = true;
@@ -101,4 +101,4 @@ buildPythonPackage rec {
   '';
 
   passthru = { inherit wxGTK openglSupport; };
-}
+})
